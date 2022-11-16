@@ -12,7 +12,7 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
+  add_compile_options(-Wall -Wextra -Wpedantic -g)
 endif()
 
 
@@ -22,31 +22,30 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(serial REQUIRED)
+find_package(example_interfaces REQUIRED)
 
 include_directories(include include/motor_control)
-add_library(serialib src/serialib.cpp)
 
 
-add_executable(motor_control src/RoboClaw.cpp)
-ament_target_dependencies(motor_control rclcpp std_msgs nav_msgs) 
+add_executable(motor_control src/motor_controller_node.cpp src/RoboClaw.cpp)
+ament_target_dependencies(motor_control rclcpp std_msgs nav_msgs serial example_interfaces ) 
 
 
-target_link_libraries(motor_control serialib)
+
+
+
+
 
 
 install(
-TARGETS motor_control   
+TARGETS motor_control  
 DESTINATION lib/${PROJECT_NAME})
 
 install(
-  TARGETS serialib
-  EXPORT  serialib
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  RUNTIME DESTINATION bin
-  INCLUDES DESTINATION include
+DIRECTORY launch config
+DESTINATION share/${PROJECT_NAME}
 )
-
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

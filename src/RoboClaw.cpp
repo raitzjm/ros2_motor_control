@@ -1,6 +1,7 @@
 
 #include "RoboClaw.h"
 #include <chrono>
+#include <iostream>
 
 #define MAXRETRY 2
 #define SetDWORDval(arg) (uint8_t)(((uint32_t)arg)>>24),(uint8_t)(((uint32_t)arg)>>16),(uint8_t)(((uint32_t)arg)>>8),(uint8_t)arg
@@ -9,7 +10,7 @@
 //
 // Constructor
 //
-RoboClaw::RoboClaw(serialib *serial, uint32_t tout)
+RoboClaw::RoboClaw(serial::Serial *serial, uint32_t tout)
 {
 	timeout = tout;
 	hserial = serial;
@@ -24,13 +25,33 @@ RoboClaw::RoboClaw(serialib *serial, uint32_t tout)
 //
 RoboClaw::~RoboClaw()
 {
+	hserial->close();
 }
 
 void RoboClaw::begin(long speed, const char* device)
 {
-	
-		hserial->openDevice(device,speed);
-	
+		hserial->setBaudrate(speed);
+		hserial->setTimeout(serial::Timeout::max(), timeout, 0, timeout, 0);
+		std::string port(device);
+		std::cout<<"Port: "<<port<<'\n';
+		hserial->setPort(port);
+		try
+		{
+			hserial->open();
+		}
+		catch(...)
+		{	
+			//ToDo Hanlde Exceptions properly
+			std::cout << "Error Opening Port";
+		}
+
+		if(hserial->isOpen())
+		{
+			std::cout<<"Is Open! \n";
+		}
+		else
+			std::cout<<"Is Closed! \n";
+
 
 }
 
@@ -53,7 +74,7 @@ bool RoboClaw::isListening()	//not used
 	return false;
 }
 
-bool RoboClaw::overflow()
+bool RoboClaw::overflow()	//Not used
 {
 #ifdef __AVR__
 	if(sserial)
@@ -65,7 +86,7 @@ bool RoboClaw::overflow()
 int RoboClaw::peek() //Not used
 {
 	if(hserial)
-		//return hserial->readBytes();
+		//return hserial->peek();
 		return 1;
 #ifdef __AVR__
 	else
@@ -73,29 +94,35 @@ int RoboClaw::peek() //Not used
 #endif
 }
 
-size_t RoboClaw::write(uint8_t byte) //Not used
+size_t RoboClaw::write(uint8_t byte) 
 {
 	if(hserial)
-		return hserial->writeBytes(&byte,1);
+	{
+		
+		size_t res = hserial->write(&byte,1);
+		//std::cout<<"Result: "<<res<<'\n';
+
+		
+	}
 #ifdef __AVR__
 	else
 		return sserial->write(byte);
 #endif
 }
 
-int RoboClaw::read()
+int RoboClaw::read()	//Not Used
 {
 
-	int byte;
-	hserial->readBytes(&byte, 1);
+	uint8_t byte;
+	hserial->read(&byte, 1);
 	return byte;
 
 }
 
 int RoboClaw::available()
 {
-	if(hserial)
-		return hserial->available();
+	
+	return hserial->available();
 #ifdef __AVR__
 	else
 		return sserial->available();
@@ -104,36 +131,26 @@ int RoboClaw::available()
 
 void RoboClaw::flush()
 {
-	//Wait for sending transmittion to finish
-	/*if(hserial)
-		hserial->flush();*/
+	
+	/* Use flush because the current serial library uses tcdrain() 
+	for it's flush() function , which waits until all output written 
+	has been transmited. Which is what we want in this case */
+	hserial->flush();
+	
+	// Maybe flush receiver buffer as well?	
+	//hserial->flushInput();
 }
 
 int RoboClaw::read(uint32_t timeout)
 {
-	/*if(hserial){
+	
+	
+	uint8_t byte;
+	int result = hserial->read(&byte, 1);
+	return byte;
 		
-		
-		//Empty buffer?
-		uint32_t start = micros();
-		while(!hserial->available()){
-		   
-		   if((micros()-start)>=timeout)
-		      return -1;
-		}
-		return hserial->read();
-		
-		
-	}*/
 
-	int byte;
-	int result = hserial->readBytes(&byte, 1,timeout);
-		if(result <0)
-		{
-			return -1;
-		}
-
-		return byte;
+		
 #ifdef __AVR__
 	else{
 		if(sserial->isListening()){
@@ -149,12 +166,15 @@ int RoboClaw::read(uint32_t timeout)
 #endif
 }
 
-void RoboClaw::clear()
+void RoboClaw::clear()	//Not USED
 {
-	if(hserial){
-		if(hserial->available())
-			hserial->flushReceiver();
+	
+	while(hserial->available())
+	{
+	//Flush the receiver
+		hserial->flushInput();
 	}
+	
 #ifdef __AVR__
 	else{
 		while(sserial->available())
@@ -752,12 +772,12 @@ bool RoboClaw::ReadPWMs(uint8_t address, int16_t &pwm1, int16_t &pwm2){
 	return valid;
 }
 
-bool RoboClaw::ReadCurrents(uint8_t address, int16_t &current1, int16_t &current2){
+bool RoboClaw::ReadCurrents(uint8_t address, int16_t &current1){
 	bool valid;
 	uint32_t value = Read4(address,GETCURRENTS,&valid);
 	if(valid){
 		current1 = value>>16;
-		current2 = value&0xFFFF;
+		//current2 = value&0xFFFF;
 	}
 	return valid;
 }
@@ -1058,7 +1078,3 @@ bool RoboClaw::GetPWMMode(uint8_t address, uint8_t &mode){
 }
 
 
-int main()
-{
-	return 1;
-}

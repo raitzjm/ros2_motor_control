@@ -1,0 +1,43 @@
+#Motor_Control:
+front_right_motor_control: 
+  ros__parameters:
+    
+    #motor_FR
+    motor_id: "front_right"
+    front_right_dev_name: "/dev/roboclaw_motor_front_right"
+    front_right_ticks_per_rotation: 131003
+    front_right_baudrate: 115200
+    front_right_motor_direction_inverse: false
+    front_right_encoder_direction_inverse: false
+
+front_left_motor_control: 
+  ros__parameters:    
+    #motor_FL
+    motor_id: "front_left"
+    front_left_dev_name: "/dev/roboclaw_motor_front_left"
+    #front_left_dev_name: "/dev/ttyAMA3"
+    front_left_ticks_per_rotation: 128026
+    front_left_baudrate: 115200
+    front_left_motor_direction_inverse: true
+    front_left_encoder_direction_inverse: false
+
+
+rear_right_motor_control: 
+  ros__parameters:    
+    #motor_BR
+    motor_id: "rear_right"
+    rear_right_dev_name: "/dev/roboclaw_motor_back_right"
+    rear_right_ticks_per_rotation: 131003
+    rear_right_baudrate: 115200
+    rear_right_motor_direction_inverse: true
+    rear_right_encoder_direction_inverse: false
+
+rear_left_motor_control: 
+  ros__parameters:    
+    #motor_BL
+    motor_id: "rear_left"
+    rear_left_dev_name: "/dev/roboclaw_motor_back_left"
+    rear_left_ticks_per_rotation: 131003
+    rear_left_baudrate: 115200
+    rear_left_motor_direction_inverse: false
+    rear_left_encoder_direction_inverse: false

@@ -1,0 +1,23 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/ubuntu/raspberry_pi_ws/install/serial/include/**",
+        "/opt/ros/foxy/include/**",
+        "/home/ubuntu/raspberry_pi_ws/src/ros2_motor_control/include/**",
+        "/home/ubuntu/raspberry_pi_ws/src/serial-ros2/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-arm64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}
