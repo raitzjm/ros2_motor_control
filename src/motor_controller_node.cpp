@@ -8,9 +8,10 @@
 #include <cmath>
 #define FE_TONEAREST 
 
-motor_controller_node::motor_controller_node(std::string motor_id) : Node (motor_id+"_motor_control")
+motor_controller_node::motor_controller_node(std::string motor_id,bool publish_main_battery_voltage) : Node (motor_id+"_motor_control")
 {
    this->motor_id_ = motor_id;
+   this->publish_main_battery_voltage_ = publish_main_battery_voltage;
    
    param_names_ = {  motor_id + "_dev_name",
                     motor_id + "_baudrate",
@@ -24,7 +25,7 @@ motor_controller_node::motor_controller_node(std::string motor_id) : Node (motor
     //Declare Parameters 
    for(auto &param : param_names_)
    {
-        this->declare_parameter(param);
+        this->declare_parameter(param,nullptr);
         
 
    }
@@ -49,16 +50,19 @@ motor_controller_node::motor_controller_node(std::string motor_id) : Node (motor
     std::string angular_velocity_topic = this->motor_id_ + "/" + ANGULAR_VELOCITY_TOPIC;
     std::string target_angular_velocity_topic = this->motor_id_ + "/" + TARGET_ANGULAR_VELOCITY_TOPIC;
     std:: string current_topic = this->motor_id_ + "/" + CURRENT_TOPIC;
+    std::string main_battery_voltage_topic = this->motor_id_ + "/main_battery_voltage" ;
 
     //Setup Publishers
     angular_velocity_publisher = this->create_publisher<std_msgs::msg::Float64>(angular_velocity_topic,10);
     current_publisher = this->create_publisher<std_msgs::msg::Float64>(current_topic,10);
+    if(publish_main_battery_voltage_)
+        main_battery_voltage_publisher = this->create_publisher<std_msgs::msg::Float32>(main_battery_voltage_topic,10);
     
-    //Setup Suscribers
+    //Setup Subscribers
     target_angular_velocity_subscriber = this->create_subscription<std_msgs::msg::Float64>(target_angular_velocity_topic,10,
     std::bind(&motor_controller_node::target_angular_velocity_callback,this,std::placeholders::_1));
 
-    //Setub Timers
+    //Setup Timers
     publisher_timer = this->create_wall_timer(std::chrono::microseconds(10000),
     std::bind(&motor_controller_node::publish_timer_callback,this));
     
@@ -143,6 +147,26 @@ int32_t motor_controller_node::rads_to_ticks(float &rads)
     return ticks;
 }
 
+
+float motor_controller_node::get_main_battery_voltage()
+{
+    bool valid  = false;
+    float battery_voltage = roboclaw.ReadMainBatteryVoltage(ROBOCLAW_ADDRESS,&valid);   
+    if(valid)
+    {
+        return battery_voltage/(float)10;
+    }
+    
+    return NULL;
+}
+
+void motor_controller_node::publish_main_battery_voltage(float &battery_voltage)
+{
+    auto msg = std_msgs::msg::Float32();
+    msg.data = battery_voltage;
+    main_battery_voltage_publisher->publish(msg);
+}
+
 void motor_controller_node:: publish_timer_callback()
 {
     bool valid_speed = false;
@@ -161,16 +185,36 @@ void motor_controller_node:: publish_timer_callback()
     {
         publish_current_mA(current1);
     }
+    else
+    {
+        RCLCPP_ERROR_STREAM(this->get_logger(),motor_id_<<": Error Getting Current Reading");
+    }
+
+    if(publish_main_battery_voltage_)
+    {
+        float main_battery_voltage = get_main_battery_voltage();
+        if(main_battery_voltage != NULL)
+        {
+            publish_main_battery_voltage(main_battery_voltage);
+        }
+
+        else
+        {
+            RCLCPP_ERROR_STREAM(this->get_logger(),motor_id_<<": Error Getting Main Battery Voltage Reading");
+        }
+    }
 }
+
+
 
 int main(int argc,char** argv)
 {
     
     rclcpp::init(argc, argv);
-    auto motor_front_right = std::make_shared<motor_controller_node>("front_right");
-    auto motor_front_left = std::make_shared<motor_controller_node>("front_left");
-    auto motor_rear_right = std::make_shared<motor_controller_node>("rear_right");
-    auto motor_rear_left = std::make_shared<motor_controller_node>("rear_left");
+    auto motor_front_right = std::make_shared<motor_controller_node>("front_right",true);
+    auto motor_front_left = std::make_shared<motor_controller_node>("front_left",false);
+    auto motor_rear_right = std::make_shared<motor_controller_node>("rear_right",false);
+    auto motor_rear_left = std::make_shared<motor_controller_node>("rear_left",false);
     rclcpp::executors::MultiThreadedExecutor m_executor;
     m_executor.add_node(motor_front_right);
     m_executor.add_node(motor_front_left);

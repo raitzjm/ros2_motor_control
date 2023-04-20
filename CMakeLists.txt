@@ -23,13 +23,13 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(serial REQUIRED)
-find_package(example_interfaces REQUIRED)
+
 
 include_directories(include include/motor_control)
 
 
 add_executable(motor_control src/motor_controller_node.cpp src/RoboClaw.cpp)
-ament_target_dependencies(motor_control rclcpp std_msgs nav_msgs serial example_interfaces ) 
+ament_target_dependencies(motor_control rclcpp std_msgs nav_msgs serial) 
 
 
 

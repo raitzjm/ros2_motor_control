@@ -5,6 +5,7 @@
 #include <string>
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float64.hpp"
+#include "std_msgs/msg/float32.hpp"
 
 
 
@@ -21,7 +22,7 @@ constexpr uint8_t ROBOCLAW_ADDRESS = 0x80;
 class motor_controller_node: public rclcpp :: Node
 {
     public:
-    motor_controller_node(std::string motor_id);
+    motor_controller_node(std::string motor_id,bool publish_main_battery_voltage);
 
     
     
@@ -33,7 +34,8 @@ class motor_controller_node: public rclcpp :: Node
     double ticks_per_rotation;
     bool motor_direction_inverse;
     bool encoder_direction_inverse;
-    
+    bool publish_main_battery_voltage_;
+
     SERIAL_OBJ serialPort;
     RoboClaw roboclaw = RoboClaw(&serialPort,ROBOCLAW_TIMEOUT_MS);
     
@@ -42,6 +44,7 @@ class motor_controller_node: public rclcpp :: Node
     rclcpp::CallbackGroup::SharedPtr motor_callback_group;
     rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr angular_velocity_publisher;
     rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr current_publisher;
+    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr main_battery_voltage_publisher;
     rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr target_angular_velocity_subscriber;
     rclcpp::TimerBase::SharedPtr publisher_timer;
 
@@ -54,6 +57,8 @@ class motor_controller_node: public rclcpp :: Node
     int32_t rads_to_ticks(float &rads);
     float get_angular_velocity(bool &valid_speed1);
     int16_t get_current_mA(void);
+    float get_main_battery_voltage(void);
+    void publish_main_battery_voltage(float &battery_voltage);
    
 };
 
